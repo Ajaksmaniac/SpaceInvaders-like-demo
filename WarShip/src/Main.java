@@ -1,4 +1,8 @@
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+
+import javax.imageio.ImageIO;
 
 public class Main {
 
@@ -15,19 +19,33 @@ public class Main {
 	 * */
 	
 	
-	
+	static Frame f;
 	
 	public static void main(String[] args) throws IOException {
+		BufferedImage bimg = ImageIO.read(new File( System.getProperty("user.dir")+"/src/background.png"));
+		int WIDTH          = bimg.getWidth();
 		BigShip ship1 = new BigShip();
 		BigShip ship2 = new BigShip();
 		CommandShip ship3 = new CommandShip();
-		BattleshipLine line = new BattleshipLine();
+		BattleshipLine line = new BattleshipLine(WIDTH);
 		
 		ship1.Attack(ship2);
 		ship1.Attack(ship3);
 		
-		 new Frame(line, ship1);
-		System.out.print(System.getProperty("user.dir"));
+		 Frame f= new Frame(line, ship1);
+		while(true) {
+			if(line.levelComplete()) {
+				 line.destroyLine();
+				 f.finishGame();
+				 break;
+			 }
+			 if(line.lineDestroyed()) {
+				 line.newWave();
+			 }
+			 
+		 }
+	
 	}
 
+	
 }

@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Graphics;
 import java.util.Random;
 import java.awt.Graphics2D;
@@ -5,6 +6,7 @@ import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 
@@ -29,20 +31,30 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
 	ImageIcon gameOverIcon = new ImageIcon(System.getProperty("user.dir")+"/src/GameOver.png");
 	Image gameOverImage = gameOverIcon.getImage();
 	Image VictoryImage = victoryIcon.getImage();
-	int WIDTH = background.getWidth(null) - 30;
+	
+	
 	int HEIGHT = background.getHeight(null);
+	int WIDTH = background.getWidth(null);
 	public  int posX = 350 ;
 	public  int posY =450;
 	public static int bulletPosX    ;
 	public static int bulletPosY    ;
+	public static int SecondBullePosX;
+	public static int SecondBullePosY;
 	public static int enemyBulletPosX    ;
 	public static int enemyBulletPosY    ;
 	public boolean bulletFired = false;
+	public boolean secondBulletUnlocked = false;
+	public boolean SecondBulletFired = false;
 	public boolean enemyBulletFired = false;
+	public boolean gameStop = false;
 	BattleshipLine line;
 	BigShip player;
 	static Random rand;
 	int n;
+	public int SCORE;
+	int fireChance = 50;
+	
    //only 1 type of ships are present in this demo
    public Frame(BattleshipLine line, BigShip player) throws IOException {
 	   this.line = line;
@@ -59,30 +71,51 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
        setVisible(true);
        this.addKeyListener(this);
        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+       this.SCORE = 0;
+       
    }
    
+   
+   void newWave(BattleshipLine newLine) {
+	   this.line = newLine;
+	   
+   }
  
 
 @Override
    public void paint(Graphics g) {
-	int random = (int)(Math.random() * 50 + 1);
+	 if(gameStop) {
+		   g.drawImage(VictoryImage,300,250 ,this);
+		   posY +=10;
+	 }else {
+		 
+	 
+	if(SCORE >= 100) {
+		secondBulletUnlocked = true;
+		
+	}
+	int random = (int)(Math.random() * fireChance + 1);
 	   try {
-		  
-		Thread.sleep(40);//remove flashing images
+		 
+		Thread.sleep(30);//remove flashing images
+		g.setColor(Color.YELLOW);
+		g.drawString(Integer.toString(SCORE), WIDTH - 30, HEIGHT-10);
 	} catch (InterruptedException e) {
 		// TODO Auto-generated catch block
 		e.printStackTrace();
 	}
 	   
-	   System.out.println(player.health);
+	   //System.out.println(player.health);
 	   g.drawImage(background,10,30 ,this);
 	   g.drawImage(playerImage,posX,posY ,this);
 	   Node curr = line.first;
 	   if(player.health <= 0) {
 		   g.drawImage(gameOverImage,300,250 ,this);
 		}else if(line.lineDestroyed()) {
-		   System.out.println("VICOTRY!");
-		   g.drawImage(VictoryImage,300,250 ,this);
+			fireChance -=10;
+			
+			line.newWave();
+			
 	   }else {
 		   while(curr != line.last.next) {
 				  if(!curr.isDestroyed()) {
@@ -107,15 +140,21 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
 						  enemyBulletPosY = curr.getY();
 						  }
 						 }
-					  if((enemyBulletPosX  >= (posX - 10) && enemyBulletPosX  <= (posX + 30)) && enemyBulletPosY == posY ) {
+					  if((enemyBulletPosX  >= (posX - 2) && enemyBulletPosX  <= (posX + 30)) && enemyBulletPosY == posY ) {
 							 g.drawImage(player.playerGetHitImage(),posX,posY  ,this);
 							 curr.ship.Attack(player);
 							 System.out.println("PLAYER HIT");
 						 }
+					  
+					  		//draws enemy ships
+					  
 						  g.drawImage(curr.ship.getImage(),curr.getX(),curr.posY ,this);
-						  if((bulletPosX  >= (curr.getX() - 20) && bulletPosX  <= (curr.getX() + 40)) && bulletPosY == curr.posY ) {
+		if((bulletPosX  >= (curr.getX() - 20) && bulletPosX  <= (curr.getX() + 60)) && bulletPosY == curr.posY ) {
 							  player.Attack(curr.ship);
 							  g.drawImage(curr.ship.getHitImage(),curr.getX(),curr.posY ,this);
+							  if(curr.isDestroyed()) {
+								  SCORE += 100;
+							  }
 							  try {
 								Thread.sleep(40);
 							} catch (InterruptedException e) {
@@ -123,11 +162,26 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
 								e.printStackTrace();
 							}
 						  }
+		if((SecondBullePosX  >= (curr.getX() - 20) && SecondBullePosX  <= (curr.getX() + 60)) && SecondBullePosY == curr.posY ) {
+			  player.Attack(curr.ship);
+			  g.drawImage(curr.ship.getHitImage(),curr.getX(),curr.posY ,this);
+			  if(curr.isDestroyed()) {
+				  SCORE += 100;
+			  }
+			  try {
+				Thread.sleep(40);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		  }
+		
 					  
 					 
 				  }
 				  
 				  curr = curr.next;
+				  
 			  }
 	   }
 	 
@@ -139,6 +193,16 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
 					bulletFired = false;
 					bulletPosY =posY;
 					bulletPosX =posX;
+					
+				}
+		 }
+		 if(SecondBulletFired) {
+			 g.drawImage(bulletImage,bulletPosX + 50,bulletPosY  ,this);
+				SecondBullePosY -= 10;
+				if(SecondBullePosY <= 0) {
+					SecondBulletFired = false;
+					SecondBullePosY =posY;
+					SecondBullePosX =posX;
 					
 				}
 		 }
@@ -154,8 +218,11 @@ public class Frame extends javax.swing.JFrame implements KeyListener {
 				
 		 }
 	  
-		 
+		 g.setColor(Color.YELLOW);
+			g.drawString(Integer.toString(SCORE), WIDTH - 30, HEIGHT-10);
+	 }
 	   repaint();
+	   
    }
 
 @Override
@@ -184,6 +251,13 @@ public void keyPressed(KeyEvent e) {
 			
 			bulletFired = true;
 		}
+		if(secondBulletUnlocked) {
+			if(SecondBulletFired == false) {
+				
+				SecondBulletFired = true;
+			}	
+		}
+		
 			
 		
 		//repaint();
@@ -207,7 +281,7 @@ public void keyReleased(KeyEvent e) {
 
 
 void playerLeft() {
-	if(posX<= 0) {
+	if(posX<= 10) {
 		return;
 	}else {			
 		posX-=10;
@@ -216,11 +290,18 @@ void playerLeft() {
 }
 
 void playerRight() {
-	if(posX >= WIDTH-10) {
+	if(posX >= WIDTH-60) {
 		return;
 	}else {			
 		posX+=10;		
 	}		
+}
+
+
+public void finishGame() {
+	// TODO Auto-generated method stub
+	gameStop = true;
+	
 }
 
 
